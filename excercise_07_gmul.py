@@ -1,4 +1,4 @@
-def gmul(a, b):
+def gf_multiply(a, b):
 
     result = 0
 
@@ -16,10 +16,10 @@ def gmul(a, b):
 
     return result
 
-print(hex(gmul(0x57, 0x83)))
+print(hex(gf_multiply(0x57, 0x83)))
 
 """
-def gmul(a, b):
+def gf_multiply(a, b):
 
     result = 0
 
