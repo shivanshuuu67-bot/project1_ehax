@@ -1,0 +1,7 @@
+a = str(input("Enter a string: "))
+data = a.encode("utf-8")
+print("Text: ", a)
+print("Bytes: ", data)
+print("Bytes in list: ", list(data))
+print("Hex: ", data.hex())
+print("Number of bytes: ", len(data))
