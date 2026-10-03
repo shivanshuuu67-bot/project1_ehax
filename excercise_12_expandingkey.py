@@ -1,0 +1,155 @@
+def rot_word(word):
+
+    return word[1:] + word[:1]
+
+def gf_multiply(a, b):
+
+    result = 0
+
+    for i in range(8):
+
+        if b & 1:
+            result ^= a
+
+        if a & 0x80:
+            a = (a << 1) ^ 0x1B
+        else:
+            a <<= 1
+
+        a &= 0xFF
+        b >>= 1
+
+    return result
+
+
+def multiplicative_inverse(a):
+
+    if a == 0:
+        return 0
+
+    for b in range(1, 256):
+
+        if gf_multiply(a, b) == 1:
+            return b
+
+def rotate_left(byte, n):
+    return ((byte << n) | (byte >> (8 - n))) & 0xFF
+
+def affine_transform(x):
+
+    result = x
+
+    result ^= rotate_left(x, 1)
+    result ^= rotate_left(x, 2)
+    result ^= rotate_left(x, 3)
+    result ^= rotate_left(x, 4)
+
+    result ^= 0x63
+
+    return result
+
+def sbox(byte):
+
+    inverse = multiplicative_inverse(byte)
+
+    result = affine_transform(inverse)
+
+    return result
+
+def sub_word(word):
+
+    result = []
+
+    for byte in word:
+        result.append(sbox(byte))
+
+    return result
+
+rcon = [0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36]
+
+def g(word, round_number):
+
+    word = rot_word(word)
+
+    word = sub_word(word)
+
+    word[0] ^= rcon[round_number - 1]
+
+    return word
+
+'''
+def expand_one_round(w0, w1, w2, w3, round_number):
+
+    w4 = [a ^ b for a, b in zip(w0, g(w3, round_number))]
+
+    w5 = [a ^ b for a, b in zip(w1, w4)]
+
+    w6 = [a ^ b for a, b in zip(w2, w5)]
+
+    w7 = [a ^ b for a, b in zip(w3, w6)]
+
+    return w4, w5, w6, w7
+
+key = [
+    0x2B, 0x7E, 0x15, 0x16,
+    0x28, 0xAE, 0xD2, 0xA6,
+    0xAB, 0xF7, 0x15, 0x88,
+    0x09, 0xCF, 0x4F, 0x3C
+]
+
+w0 = key[0:4]
+w1 = key[4:8]
+w2 = key[8:12]
+w3 = key[12:16]
+
+w4, w5, w6, w7 = expand_one_round(w0, w1, w2, w3, 1)
+
+print([hex(x) for x in w4])
+print([hex(x) for x in w5])
+print([hex(x) for x in w6])
+print([hex(x) for x in w7])
+'''
+key = [
+    0x2B, 0x7E, 0x15, 0x16,
+    0x28, 0xAE, 0xD2, 0xA6,
+    0xAB, 0xF7, 0x15, 0x88,
+    0x09, 0xCF, 0x4F, 0x3C
+]
+
+def key_expansion(key):
+
+    words = []
+
+    # Split original 16-byte key into 4 words
+    for i in range(0, 16, 4):
+        words.append(key[i:i+4])
+
+    # Generate remaining 40 words
+    for round_number in range(1, 11):
+
+        w0 = words[-4]
+        w1 = words[-3]
+        w2 = words[-2]
+        w3 = words[-1]
+
+        w4 = [a ^ b for a, b in zip(w0, g(w3, round_number))]
+        w5 = [a ^ b for a, b in zip(w1, w4)]
+        w6 = [a ^ b for a, b in zip(w2, w5)]
+        w7 = [a ^ b for a, b in zip(w3, w6)]
+
+        words.extend([w4, w5, w6, w7])
+
+    return words
+
+round_keys = key_expansion(key)
+
+for round_number in range(11):
+
+    print(f"Round {round_number}:")
+
+    words = round_keys[round_number * 4 : round_number * 4 + 4]
+
+    for word in words:
+        print(" ".join(f"{byte:02X}" for byte in word))
+
+    print()
